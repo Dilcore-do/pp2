@@ -2,6 +2,7 @@
 import pygame
 import random
 import sys
+import time
 
 # ===================== INIT =====================
 pygame.init()
@@ -14,6 +15,10 @@ CELL = 20
 FPS = 10
 LEVEL = 1
 SCORE = 0
+
+# таймер еды (секунды)
+FOOD_LIFETIME = 5
+food_spawn_time = 0
 
 # ===================== COLORS =====================
 WHITE = (255, 255, 255)
@@ -38,10 +43,10 @@ direction = (CELL, 0)
 walls = []
 
 def generate_walls(level):
-    """Создание стен в зависимости от уровня"""
+    """Создание стен по уровню"""
     walls.clear()
 
-    # базовые стены (рамка)
+    # рамка
     for x in range(0, WIDTH, CELL):
         walls.append((x, 0))
         walls.append((x, HEIGHT - CELL))
@@ -50,7 +55,7 @@ def generate_walls(level):
         walls.append((0, y))
         walls.append((WIDTH - CELL, y))
 
-    # дополнительные стены с уровнем
+    # дополнительные стены
     if level >= 2:
         for x in range(200, 400, CELL):
             walls.append((x, 200))
@@ -63,7 +68,7 @@ generate_walls(LEVEL)
 
 # ===================== FOOD =====================
 def generate_food():
-    """Генерация еды не на змее и не на стене"""
+    """Генерация еды не на змее и стене"""
     while True:
         x = random.randrange(0, WIDTH, CELL)
         y = random.randrange(0, HEIGHT, CELL)
@@ -71,11 +76,14 @@ def generate_food():
         if (x, y) not in snake and (x, y) not in walls:
             return (x, y)
 
+# еда + её вес
 food = generate_food()
+food_value = random.choice([1, 2, 3])
+food_spawn_time = time.time()
 
 # ===================== GAME OVER =====================
 def game_over():
-    """Экран Game Over"""
+    """Экран поражения"""
     screen.fill(BLACK)
 
     text1 = big_font.render("GAME OVER", True, RED)
@@ -118,23 +126,26 @@ while True:
     new_head = (head_x, head_y)
 
     # -------- COLLISIONS --------
-    # столкновение со стеной
     if new_head in walls:
         game_over()
 
-    # выход за границы (доп защита)
     if head_x < 0 or head_x >= WIDTH or head_y < 0 or head_y >= HEIGHT:
         game_over()
 
-    # столкновение с собой
     if new_head in snake:
         game_over()
 
     snake.insert(0, new_head)
 
-    # -------- FOOD --------
+    # -------- FOOD TIMER (исчезновение еды) --------
+    if time.time() - food_spawn_time > FOOD_LIFETIME:
+        food = generate_food()
+        food_value = random.choice([1, 2, 3])
+        food_spawn_time = time.time()
+
+    # -------- FOOD EAT --------
     if new_head == food:
-        SCORE += 1
+        SCORE += food_value  # еда с разным весом
 
         # каждые 3 очка → новый уровень
         if SCORE % 3 == 0:
@@ -143,6 +154,8 @@ while True:
             generate_walls(LEVEL)
 
         food = generate_food()
+        food_value = random.choice([1, 2, 3])
+        food_spawn_time = time.time()
     else:
         snake.pop()
 
@@ -153,8 +166,15 @@ while True:
     for segment in snake:
         pygame.draw.rect(screen, GREEN, (*segment, CELL, CELL))
 
-    # еда
-    pygame.draw.rect(screen, RED, (*food, CELL, CELL))
+    # еда (разный цвет по весу)
+    if food_value == 1:
+        food_color = RED
+    elif food_value == 2:
+        food_color = (255, 165, 0)  # оранжевый
+    else:
+        food_color = (255, 255, 0)  # жёлтый
+
+    pygame.draw.rect(screen, food_color, (*food, CELL, CELL))
 
     # стены
     for wall in walls:
