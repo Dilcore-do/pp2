@@ -66,7 +66,7 @@ def draw_toolbar():
 def get_color():
     return BLACK if tool == "eraser" else current_color
 
-# 🔥 плавная линия (решает проблему прерывистости)
+ # плавная линия 
 def draw_smooth_line(surface, color, start, end, radius):
     dx = end[0] - start[0]
     dy = end[1] - start[1]
