@@ -1,3 +1,5 @@
-first_name,last_name,phone_number,email
-John,Doe,123456789,john@example.com
-Jane,Smith,987654321,jane@example.com
+first_name,last_name,email,birthday,group,phone,type
+John,Doe,john@gmail.com,2000-01-01,Friend,123456789,mobile
+Jane,Smith,jane@gmail.com,1998-05-12,Work,987654321,home
+Mike,Johnson,mike@gmail.com,1995-07-20,Family,555666777,mobile
+Anna,Brown,anna@gmail.com,2002-03-15,Other,111222333,work

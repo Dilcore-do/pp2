@@ -13,7 +13,7 @@ cur = conn.cursor()
 
 
 # ------------------------
-# ADD CONTACT (console)
+# ADD CONTACT 
 # ------------------------
 def add_contact_console():
     first_name = input("First name: ")
@@ -23,38 +23,72 @@ def add_contact_console():
     birthday = input("Birthday (YYYY-MM-DD): ")
     group = input("Group (Family/Work/Friend/Other): ")
 
+    # -------------------------
+    # GET OR CREATE GROUP
+    # -------------------------
+    cur.execute("SELECT id FROM groups WHERE name=%s", (group,))
+    group_row = cur.fetchone()
+
+    if group_row:
+        group_id = group_row[0]
+    else:
+        cur.execute(
+            "INSERT INTO groups(name) VALUES(%s) RETURNING id",
+            (group,)
+        )
+        group_id = cur.fetchone()[0]
+
+    # -------------------------
+    # INSERT CONTACT
+    # -------------------------
     cur.execute("""
         INSERT INTO contacts (first_name, last_name, email, birthday, group_id)
-        VALUES (%s, %s, %s, %s,
-        (SELECT id FROM groups WHERE name=%s))
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id
-    """, (first_name, last_name, email, birthday, group))
+    """, (first_name, last_name, email, birthday, group_id))
 
     contact_id = cur.fetchone()[0]
 
-    cur.execute("""
-        INSERT INTO phones (contact_id, phone, type)
-        VALUES (%s, %s, %s)
-    """, (contact_id, phone, "mobile"))
+    # -------------------------
+    # INSERT PHONES
+    # -------------------------
+    phones = []
+
+    while True:
+        phone = input("Phone (empty to stop): ")
+        if phone == "":
+            break
+
+        phone_type = input("Type (home/work/mobile): ")
+
+        if phone_type not in ("home", "work", "mobile"):
+            print("Invalid type, set to mobile")
+            phone_type = "mobile"
+
+        phones.append((phone, phone_type))
+
+    for phone, phone_type in phones:
+        cur.execute("""
+            INSERT INTO phones (contact_id, phone, type)
+            VALUES (%s, %s, %s)
+        """, (contact_id, phone, phone_type))
 
     conn.commit()
     print("Contact added!")
 
 
 # ------------------------
-# CSV IMPORT (extended)
+# CSV IMPORT 
 # ------------------------
 def add_contacts_csv(filename):
     with open(filename, 'r') as f:
         reader = csv.DictReader(f)
 
         for row in reader:
-            # create or find group id
             cur.execute("SELECT id FROM groups WHERE name = %s", (row['group'],))
             group_row = cur.fetchone()
             group_id = group_row[0] if group_row else None
 
-            # insert contact
             cur.execute("""
                 INSERT INTO contacts (first_name, last_name, email, birthday, group_id)
                 VALUES (%s, %s, %s, %s, %s)
@@ -69,7 +103,6 @@ def add_contacts_csv(filename):
 
             contact_id = cur.fetchone()[0]
 
-            # insert phone
             cur.execute("""
                 INSERT INTO phones (contact_id, phone, type)
                 VALUES (%s, %s, %s)
@@ -91,7 +124,6 @@ def update_contact():
     new_first_name = input("New first name: ")
     new_phone = input("New phone (optional): ")
 
-    # find contact
     cur.execute("""
         SELECT c.id
         FROM contacts c
@@ -124,7 +156,7 @@ def update_contact():
 
 
 # ------------------------
-# DELETE CONTACT (procedure)
+# DELETE CONTACT 
 # ------------------------
 def delete_contact():
     choice = input("Delete by name or phone? ")
@@ -158,11 +190,48 @@ def query_contacts():
 
 
 # ------------------------
-# SEARCH FUNCTION (pattern)
+# SORT CONTACTS 
+# ------------------------
+def sort_contacts():
+    print("Sort by:")
+    print("1 Name")
+    print("2 Birthday")
+    print("3 Date added")
+
+    choice = input("Choose: ")
+
+    if choice == "1":
+        order = "c.first_name"
+    elif choice == "2":
+        order = "c.birthday"
+    elif choice == "3":
+        order = "c.created_at"
+    else:
+        print("Invalid choice")
+        return
+
+    query = f"""
+        SELECT c.first_name, c.last_name, c.email, c.birthday,
+               g.name,
+               p.phone, p.type
+        FROM contacts c
+        LEFT JOIN groups g ON c.group_id = g.id
+        LEFT JOIN phones p ON c.id = p.contact_id
+        ORDER BY {order}
+    """
+
+    cur.execute(query)
+
+    for row in cur.fetchall():
+        print(row)
+
+
+# ------------------------
+# SEARCH FUNCTION
 # ------------------------
 def search_contacts():
     pattern = input("Search: ")
-    cur.execute("SELECT * FROM get_contacts_by_pattern(%s)", (pattern,))
+    cur.execute("SELECT * FROM search_contacts(%s)", (pattern,))
     for row in cur.fetchall():
         print(row)
 
@@ -171,12 +240,24 @@ def search_contacts():
 # PAGINATION FUNCTION
 # ------------------------
 def paginate_contacts():
-    limit = int(input("Limit: "))
-    offset = int(input("Offset: "))
+    limit = 3
+    offset = 0
 
-    cur.execute("SELECT * FROM get_contacts_paginated(%s, %s)", (limit, offset))
-    for row in cur.fetchall():
-        print(row)
+    while True:
+        cur.execute("SELECT * FROM get_contacts_paginated(%s, %s)", (limit, offset))
+        rows = cur.fetchall()
+
+        for r in rows:
+            print(r)
+
+        action = input("\n[n] next [p] prev [q] quit: ")
+
+        if action == "n":
+            offset += limit
+        elif action == "p" and offset >= limit:
+            offset -= limit
+        elif action == "q":
+            break
 
 
 # ------------------------
@@ -204,8 +285,10 @@ def search_by_email():
     email = input("Email search: ")
 
     cur.execute("""
-        SELECT * FROM contacts
-        WHERE email ILIKE %s
+        SELECT c.first_name, c.last_name, c.email, g.name
+        FROM contacts c
+        LEFT JOIN groups g ON c.group_id = g.id
+        WHERE c.email ILIKE %s
     """, ('%' + email + '%',))
 
     for row in cur.fetchall():
@@ -310,6 +393,7 @@ def main():
         print("10 Export JSON")
         print("11 Import JSON")
         print("12 Exit")
+        print("13 Sort")
 
         choice = input("Choose: ")
 
@@ -337,6 +421,8 @@ def main():
             import_from_json()
         elif choice == "12":
             break
+        elif choice == "13":
+            sort_contacts()
 
 
 if __name__ == "__main__":

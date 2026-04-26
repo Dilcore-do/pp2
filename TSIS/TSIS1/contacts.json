@@ -1,0 +1,58 @@
+[
+    {
+        "first_name": "Aruzhan",
+        "last_name": "Kassenova",
+        "email": "aruzhan@gmail.com",
+        "birthday": "2001-04-10",
+        "group": "Friend",
+        "phones": [
+            {
+                "phone": "+77011223344",
+                "type": "mobile"
+            }
+        ]
+    },
+    {
+        "first_name": "Dias",
+        "last_name": "Nurgali",
+        "email": "dias@mail.com",
+        "birthday": "1999-11-22",
+        "group": "Work",
+        "phones": [
+            {
+                "phone": "+77015556677",
+                "type": "mobile"
+            },
+            {
+                "phone": "+77271234567",
+                "type": "home"
+            }
+        ]
+    },
+    {
+        "first_name": "Alina",
+        "last_name": "Suleimenova",
+        "email": "alina@gmail.com",
+        "birthday": "2003-06-05",
+        "group": "Family",
+        "phones": [
+            {
+                "phone": "+77018889900",
+                "type": "mobile"
+            }
+        ]
+    },
+    {
+        "first_name": "Timur",
+        "last_name": "Bekturov",
+        "email": "timur@gmail.com",
+        "birthday": null,
+        "group": "Other",
+        "phones": [
+            {
+                "phone": "+77019990011",
+                "type": "work"
+            }
+        ]
+    }
+]
