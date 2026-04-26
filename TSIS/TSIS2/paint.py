@@ -177,10 +177,13 @@ while running:
             if event.key==pygame.K_2: brush_size=5
             if event.key==pygame.K_3: brush_size=10
 
-            mods = pygame.key.get_mods()
+            keys = pygame.key.get_pressed()
 
-            # SAVE (Cmd+S)
-            if event.key==pygame.K_s and mods & pygame.KMOD_META:
+            # SAVE (Ctrl+S / Cmd+S on macOS)
+            if event.key == pygame.K_s and (
+                keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL] or
+                keys[pygame.K_LGUI] or keys[pygame.K_RGUI]
+            ):
                 filename = datetime.now().strftime("canvas_%Y%m%d_%H%M%S.png")
                 pygame.image.save(canvas, filename)
                 print("Saved:", filename)
