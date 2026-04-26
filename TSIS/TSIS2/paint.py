@@ -1,6 +1,7 @@
 import pygame
 import math
 from datetime import datetime
+import os
 
 pygame.init()
 
@@ -184,7 +185,8 @@ while running:
                 keys[pygame.K_LCTRL] or keys[pygame.K_RCTRL] or
                 keys[pygame.K_LGUI] or keys[pygame.K_RGUI]
             ):
-                filename = datetime.now().strftime("canvas_%Y%m%d_%H%M%S.png")
+                filename = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                        datetime.now().strftime("canvas_%Y%m%d_%H%M%S.png"))
                 pygame.image.save(canvas, filename)
                 print("Saved:", filename)
 
